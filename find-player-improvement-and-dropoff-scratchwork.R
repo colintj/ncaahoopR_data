@@ -58,39 +58,30 @@ players <-
   mutate(usg_preds = map(usg_mod, get_preds))
 
 
+players %>%
+  mutate(current_exp_min = map_dbl(min_preds, function(x) ifelse(last(x$pred) < 0, 0, last(x$pred))),
+         median_usg = map_dbl(usg_preds, function(x) median(x$pred)),
+         current_exp_usg = map_dbl(usg_preds, function(x) ifelse(last(x$pred) < 0, 0, last(x$pred))),
+         diff = current_exp_usg - median_usg) %>%
+  arrange(desc(diff)) %>%
+  slice(1:20) %>%
+  group_by(team) %>%
+  summarise(diff = sum(diff)) %>% arrange(desc(diff)) %>% print(n = "all")
+         
 
 players %>%
   mutate(current_exp_min = map_dbl(min_preds, function(x) ifelse(last(x$pred) < 0, 0, last(x$pred))),
-         median_min_pred = map_dbl(min_preds, function(x) median(x$pred)),
-         min_diff = (current_exp_min - median_min_pred)/median_min_pred,
-         median_usg = map_dbl(data, function(x) mean(x$usg))*100,
-         median_stocks = map_dbl(data, function(x) median(x$stock_rate))*100,
-         missing_usg = median_usg*min_diff,
-         missing_stocks = median_stocks*min_diff) %>%
-  arrange(missing_usg) %>%
-  select(team, player, current_exp_min, median_min_pred, median_usg, median_stocks, missing_usg, missing_stocks) %>%
-  slice(1:20)
-
-
-players %>%
-  mutate(current_exp_min = map_dbl(min_preds, function(x) ifelse(last(x$pred) < 0, 0, last(x$pred))),
-         median_min_pred = map_dbl(min_preds, function(x) median(x$pred)),
-         min_diff = (current_exp_min - median_min_pred)/median_min_pred,
-         median_usg = map_dbl(data, function(x) mean(x$usg))*100,
-         median_stocks = map_dbl(data, function(x) median(x$stock_rate))*100,
-         missing_usg = median_usg*min_diff,
-         missing_stocks = median_stocks*min_diff) %>%
-  arrange(missing_usg) %>%
-  select(team, player, current_exp_min, median_min_pred, median_usg, median_stocks, missing_usg, missing_stocks) %>%
-  slice(1:20)
-
+         median_usg = map_dbl(usg_preds, function(x) median(x$pred)),
+         current_exp_usg = map_dbl(usg_preds, function(x) ifelse(last(x$pred) < 0, 0, last(x$pred))),
+         diff = current_exp_usg - median_usg) %>%
+  select(team, player, current_exp_min, current_exp_usg) %>%
+  filter(current_exp_min > 30) %>%
+  arrange(desc(current_exp_usg)) %>% slice(1:20)
 
 ###
 
-players %>% select(team) %>% distinct()
-  
-tm <- "Michigan St"
-plyr <- "T. Walker"
+tm <- "Houston"
+plyr <- "T. Moore"
 data <- players[which(players$team == tm & players$player == plyr), ]$data[[1]]
 usg_preds <- players[which(players$team == tm & players$player == plyr), ]$usg_preds[[1]]
 
@@ -99,6 +90,10 @@ ggplot()+
   geom_point(data = data, aes(x = day_no, y = usg))
 
 
+players %>%
+  filter(team == "LSU") %>%
+  select(player) %>%
+  distinct()
 
 ## H. Dickinson
 ## K. Murray
